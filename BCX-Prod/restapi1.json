@@ -13,14 +13,14 @@
 	  {
 		"kind": "main",
 		"tag": "com-fd-djaja-sap-sac-restapi",
-		"url": "https://phmgaguli.github.io/phmgagul/BCX-Prod/restapi.js",
+		"url": "https://phmgaguli.github.io/phmgagul/BCX-PROD/restapi.js",
 		"integrity": "",
 		"ignoreIntegrity": true
 	  },
 	  {
 		"kind": "styling",
 		"tag": "com-fd-djaja-sap-sac-restapi-aps",
-		"url": "https://phmgaguli.github.io/phmgagul/BCX-Prod/aps_restapi.js",
+		"url": "https://phmgaguli.github.io/phmgagul/BCX-PROD/aps.restapi.js",
 		"integrity": "",
 		"ignoreIntegrity": true
 	  }
