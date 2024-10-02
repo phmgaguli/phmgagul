@@ -20,7 +20,7 @@
 	  {
 		"kind": "styling",
 		"tag": "com-fd-djaja-sap-sac-restapi-aps",
-		"url": "https://phmgaguli.github.io/phmgagul/BCX-Prod/aps.restapi.js",
+		"url": "https://phmgaguli.github.io/phmgagul/BCX-Prod/aps_restart.js",
 		"integrity": "",
 		"ignoreIntegrity": true
 	  }
