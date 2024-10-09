@@ -34,7 +34,7 @@
 	  "restapiurl": {
 		"type": "string",
 		"description": "The REST API URL",
-        "default": "https://business-connexion--pty--ltd-sap-coe-inno-team-tzgnuvpl56cf6144.cfapps.eu10-004.hana.ondemand.com/odata/v4/prodsimapp/product"
+        "default": "https://business-connexion--pty--ltd-sap-coe-inno-team-tzgnuvpl56cf6144.cfapps.eu10-004.hana.ondemand.com/odata/v4/prodsimapp/product(id='MR314103')"
 	  },
 	  "name": {
 		"type": "string",
