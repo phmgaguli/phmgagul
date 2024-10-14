@@ -34,7 +34,7 @@
 	  "restapiurl": {
 		"type": "string",
 		"description": "The REST API URL",
-        "default": "https://prods.cfapps.eu10-004.hana.ondemand.com"
+        "default": "https://prods.cfapps.eu10-004.hana.ondemand.com/predict?product=MR311651"
 	  },
 	  "name": {
 		"type": "string",
