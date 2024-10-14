@@ -272,11 +272,11 @@
                 "use strict";
 
                 return Controller.extend("myView.Template", {
-
                     onButtonPress: function(oEvent) {
-
                         var product = oView.byId("input").getValue();
-
+                    
+                        console.log("Product being searched:", product); // Log the product being searched
+                    
                         $.ajax({
                             url: restAPIURL,
                             type: 'GET',
@@ -285,34 +285,35 @@
                             }),
                             contentType: 'application/x-www-form-urlencoded',
                             success: function(data) {
-                                console.log(data)
+                                console.log("Success:", data); // Log the successful response
+                    
+                                // Process the response data
                                 let result = '';
                                 for (let i = 0; i < data['topn'].length; i++) {
-                                    //console.log(data['topn'])
-                                    result = result.concat(data['topn'][i])
+                                    result = result.concat(data['topn'][i]);
                                 }
-                                //_score = data["similar products"];
+                    
                                 _labels = data["labels"];
-                                _topn =  data["topn"];
+                                _topn = data["topn"];
                                 let concatcoords = '';
-                                _coords = concatcoords.concat(data["x_coords"], ";" , data["y_coords"], ";" , data["z_coords"], ";" , data["labels"]);
+                                _coords = concatcoords.concat(data["x_coords"], ";", data["y_coords"], ";", data["z_coords"], ";", data["labels"]);
                                 const datasetarray = _coords.split(';');
                                 that._firePropertiesChanged();
+                    
                                 this.settings = {};
                                 this.settings.score = "";
                                 this.settings.topn = "";
                                 this.settings.coords = "";
                                 this.settings.labels = "";
-
+                    
                                 that.dispatchEvent(new CustomEvent("onStart", {
                                     detail: {
                                         settings: this.settings
                                     }
                                 }));
-
                             },
                             error: function(e) {
-                                console.log("error: " + e);
+                                console.log("Error: ", e); // Log any errors
                             }
                         });
                     }
@@ -348,3 +349,10 @@
     }
 
 })();
+
+// },
+// "restapiurl": {
+//   "type": "string",
+//   "description": "The REST API URL",
+//   "default": "https://prods.cfapps.eu10-004.hana.ondemand.com/predict?product=MR311651"
+// },
