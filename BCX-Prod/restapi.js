@@ -1,164 +1,90 @@
 (function () {
+    let _shadowRoot;
+    let _id;
+    let _score;
+    let _topn;
+    let _coords;
+    let _labels;
+    
+    let div;
+    let Ar = [];
+    let widgetName;
+    
     let tmpl = document.createElement("template");
-    tmpl.innerHTML = `
-      <style>
-          fieldset {
-              margin-bottom: 10px;
-              border: 1px solid #afafaf;
-              border-radius: 3px;
-          }
-          table {
-              width: 100%;
-          }
-          input, textarea, select {
-              font-family: "72",Arial,Helvetica,sans-serif;
-              width: 100%;
-              padding: 4px;
-              box-sizing: border-box;
-              border: 1px solid #bfbfbf;
-          }
-          input[type=checkbox] {
-              width: inherit;
-              margin: 6px 3px 6px 0;
-              vertical-align: middle;
-          }
-      </style>
-      <form id="form" autocomplete="off">
-        <fieldset> 
-          <legend>General</legend>
-          <table>
-            <tr>
-              <td><label for="REST API URL">REST API URL</label></td>
-              <td><input id="restapiurl" name="restapiurl" type="text"></td>
-            </tr>
-            <tr>
-              <td><label for="Widget Name">Widget Name</label></td>
-              <td><input id="name" name="name" type="text"></td>
-            </tr>
-          </table>
-        </fieldset>
-        <button type="submit" hidden>Submit</button>
-      </form>
-      <canvas id="chartCanvas"></canvas>
-    `;
+    tmpl.innerHTML = `<style></style>`;
 
     class restAPI extends HTMLElement {
         constructor() {
             super();
 
-            // Attach Shadow DOM
-            this._shadowRoot = this.attachShadow({
-                mode: "open"
-            });
-            this._shadowRoot.appendChild(tmpl.content.cloneNode(true));
+            _shadowRoot = this.attachShadow({ mode: "open" });
+            _shadowRoot.appendChild(tmpl.content.cloneNode(true));
 
-            // Add event listener for form changes
-            let form = this._shadowRoot.getElementById("form");
-            form.addEventListener("change", this._change.bind(this));
+            _id = createGuid();
 
-            // Load Chart.js dynamically if not already loaded
-            if (typeof Chart === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = () => {
-                    this.fetchDataAndInitializeChart(); // Initialize the chart after loading Chart.js
-                };
-                this._shadowRoot.appendChild(script);
-            } else {
-                this.fetchDataAndInitializeChart(); // Initialize chart directly if Chart.js is available
+            this._export_settings = {
+                restapiurl: "",
+                score: "",
+                topn: "",
+                coords: "",
+                name: "",
+                labels: ""
+            };
+
+            this._firstConnection = 0;
+            this._firstConnectionUI5 = 0;
+        }
+
+        connectedCallback() {
+            this.initReactProps();
+        }
+
+        disconnectedCallback() {
+            if (this._subscription) {
+                this._subscription();
+                this._subscription = null;
             }
         }
 
-        // Fetch data from the REST API and initialize the chart
-        fetchDataAndInitializeChart() {
-            const restApiUrl = this.restapiurl; // Use the API URL from the form
-            if (!restApiUrl) {
-                console.error("REST API URL is not set.");
-                return;
-            }
-
-            fetch(restApiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    // Extract labels and data from the response (this depends on the actual response structure)
-                    const labels = data.map(item => item.label); // Assuming your response has a 'label' field
-                    const values = data.map(item => item.value); // Assuming your response has a 'value' field
-
-                    this.initializeChart(labels, values); // Pass the labels and values to the chart
-                })
-                .catch(error => console.error('Error fetching data:', error));
+        onCustomWidgetAfterUpdate(changedProperties) {
+            UI5(changedProperties, this);
         }
 
-        // Initialize Chart.js chart
-        initializeChart(labels, data) {
-            const ctx = this._shadowRoot.getElementById('chartCanvas').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar', // or other types like 'line', 'pie', etc.
-                data: {
-                    labels: labels, // Dynamic labels from API response
-                    datasets: [{
-                        label: 'Data from REST API',
-                        data: data, // Dynamic data from API response
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        // Handle form changes
-        _change(e) {
-            this._changeProperty(e.target.name);
-        }
-
-        _changeProperty(name) {
-            let properties = {};
-            properties[name] = this[name];
-            this._firePropertiesChanged(properties);
-        }
-
-        _firePropertiesChanged(properties) {
+        _firePropertiesChanged() {
+            this.score = "";
+            this.topn = "";
+            this.coords = "";
+            this.labels = "";
             this.dispatchEvent(new CustomEvent("propertiesChanged", {
                 detail: {
-                    properties: properties
+                    properties: {
+                        score: this.score,
+                        topn: this.topn,
+                        coords: this.coords,
+                        labels: this.labels
+                    }
                 }
             }));
         }
 
         get restapiurl() {
-            return this.getValue("restapiurl");
+            return this._export_settings.restapiurl;
         }
+
         set restapiurl(value) {
-            this.setValue("restapiurl", value);
+            this._export_settings.restapiurl = value;
         }
 
         get name() {
-            return this.getValue("name");
-        }
-        set name(value) {
-            this.setValue("name", value);
+            return this._export_settings.name;
         }
 
-        getValue(id) {
-            return this._shadowRoot.getElementById(id).value;
-        }
-        setValue(id, value) {
-            this._shadowRoot.getElementById(id).value = value;
+        set name(value) {
+            this._export_settings.name = value;
         }
 
         static get observedAttributes() {
-            return [
-                "restapiurl",
-                "name"
-            ];
+            return ["restapiurl", "name", "score", "topn", "coords", "labels"];
         }
 
         attributeChangedCallback(name, oldValue, newValue) {
@@ -166,90 +92,123 @@
                 this[name] = newValue;
             }
         }
+
+        initReactProps() {
+            try {
+                if (window.commonApp) {
+                    let outlineContainer = commonApp.getShell().findElements(true, ele => ele.hasStyleClass && ele.hasStyleClass("sapAppBuildingOutline"))[0];
+                    if (outlineContainer && outlineContainer.getReactProps) {
+                        let props = outlineContainer.getReactProps();
+                        this.subscribeReactStore(props.store);
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        subscribeReactStore(store) {
+            this._subscription = store.subscribe({
+                effect: state => {
+                    this.parseReactState(state);
+                    return { result: 1 };
+                }
+            });
+        }
+
+        parseReactState(state) {
+            let components = {};
+            let globalState = state.globalState;
+            let instances = globalState.instances;
+            let app = instances.app["[{\"app\":\"MAIN_APPLICATION\"}]"];
+            let names = app.names;
+
+            for (let key in names) {
+                let name = names[key];
+                let obj = JSON.parse(key).pop();
+                let type = Object.keys(obj)[0];
+                let id = obj[type];
+                components[id] = { type, name };
+            }
+
+            let metadata = JSON.stringify({ components, vars: app.globalVars });
+            if (metadata != this.metadata) {
+                this.metadata = metadata;
+                this.dispatchEvent(new CustomEvent("propertiesChanged", { detail: { properties: { metadata } } }));
+            }
+        }
+    }
+    customElements.define("com-fd-djaja-sap-sac-restapi", restAPI);
+
+    function UI5(changedProperties, that) {
+        div = document.createElement('div');
+        widgetName = that._export_settings.name;
+        div.slot = "content_" + widgetName;
+
+        let restAPIURL = that._export_settings.restapiurl;
+
+        if (that._firstConnectionUI5 === 0) {
+            let div0 = document.createElement('div');
+            div0.innerHTML = `<script id="oView_${widgetName}" name="oView_${widgetName}" type="sapui5/xmlview">
+                <mvc:View xmlns="sap.m" xmlns:mvc="sap.ui.core.mvc" xmlns:l="sap.ui.layout" height="100%" controllerName="myView.Template">
+                    <l:VerticalLayout class="sapUiContentPadding" width="100%">
+                        <Input id="input"  placeholder="Enter product number..." liveChange=""/>
+                        <Button id="buttonId" text="Get Similar Products" width="150px" press=".onButtonPress" />
+                    </l:VerticalLayout>
+                </mvc:View></script>`;
+            _shadowRoot.appendChild(div0);
+
+            let div1 = document.createElement('div');
+            div1.innerHTML = `<div id="ui5_content_${widgetName}" name="ui5_content_${widgetName}"><slot name="content_${widgetName}"></slot></div>`;
+            _shadowRoot.appendChild(div1);
+
+            that.appendChild(div);
+
+            sap.ui.getCore().attachInit(function () {
+                sap.ui.define(["sap/ui/core/mvc/Controller"], function (Controller) {
+                    return Controller.extend("myView.Template", {
+                        onButtonPress: function () {
+                            let product = oView.byId("input").getValue();
+                            $.ajax({
+                                url: restAPIURL,
+                                type: 'GET',
+                                data: $.param({ product }),
+                                contentType: 'application/x-www-form-urlencoded',
+                                success: function (data) {
+                                    _labels = data["labels"];
+                                    _topn = data["topn"];
+                                    _coords = `${data["x_coords"]};${data["y_coords"]};${data["z_coords"]};${data["labels"]}`;
+                                    that._firePropertiesChanged();
+                                },
+                                error: function (error) {
+                                    console.error("Error fetching data:", error);
+                                }
+                            });
+                        }
+                    });
+                });
+
+                let oView = sap.ui.xmlview({ viewContent: jQuery(_shadowRoot.getElementById('oView_' + widgetName)).html() });
+                oView.placeAt(div);
+
+                if (that._designMode) {
+                    oView.byId("buttonId").setEnabled(false);
+                    oView.byId("input").setEnabled(false);
+                } else {
+                    oView.byId("buttonId").setEnabled(true);
+                    oView.byId("input").setEnabled(true);
+                }
+            });
+        }
     }
 
-    customElements.define("com-fd-djaja-sap-sac-restapi", restAPI);
+    function createGuid() {
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+            let r = Math.random() * 16 | 0;
+            return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
 })();
-
-
-
-//testing chart reaction with above code .
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -638,9 +597,9 @@
 
 
 
-// // },
-// // "restapiurl": {
-// //   "type": "string",
-// //   "description": "The REST API URL",
-// //   "default": "https://prods.cfapps.eu10-004.hana.ondemand.com/predict?product=MR311651"
-// // },
+// },
+// "restapiurl": {
+//   "type": "string",
+//   "description": "The REST API URL",
+//   "default": "https://prods.cfapps.eu10-004.hana.ondemand.com/predict?product=MR311651"
+// },
