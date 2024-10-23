@@ -1,9 +1,14 @@
 (function () {
     let _shadowRoot;
+    let _id;
+    let _score;
     let _topn;
     let _coords;
+    let _labels;
+    let div;
+    let Ar = [];
     let widgetName;
-    
+
     let tmpl = document.createElement("template");
     tmpl.innerHTML = `
       <style>
@@ -19,77 +24,91 @@
             });
             _shadowRoot.appendChild(tmpl.content.cloneNode(true));
 
-            widgetName = createGuid();
+            _id = createGuid();
 
             this._export_settings = {};
             this._export_settings.restapiurl = "";
+            this._export_settings.score = "";
+            this._export_settings.topn = "";
+            this._export_settings.coords = "";
+            this._export_settings.name = "";
+            this._export_settings.labels = "";
 
-            this._firstConnection = 0;
             this._firstConnectionUI5 = 0;
+
+            // Load Plotly from CDN
+            const plotlyScript = document.createElement('script');
+            plotlyScript.src = "https://cdn.plot.ly/plotly-latest.min.js";
+            plotlyScript.onload = () => console.log('Plotly loaded');
+            document.head.appendChild(plotlyScript);
         }
 
         connectedCallback() {
-            this.loadPlotly(); // Load Plotly when the widget is connected
+            this.renderUI();
         }
 
-        onCustomWidgetAfterUpdate(changedProperties) {
-            if (changedProperties.restapiurl) {
-                this.fetchDataFromAPI(changedProperties.restapiurl);
-            }
-        }
+        renderUI() {
+            // Create container for Plotly chart
+            div = document.createElement('div');
+            div.id = 'plotly-chart-container';
+            div.style.width = '100%';
+            div.style.height = '400px'; // You can adjust the height as necessary
+            _shadowRoot.appendChild(div);
 
-        // Function to fetch data from the REST API
-        fetchDataFromAPI(restAPIURL) {
-            // Fetch data from API
-            $.ajax({
-                url: restAPIURL,
-                type: 'GET',
-                success: (data) => {
-                    console.log("API Data:", data); // Check the response
+            // Fetch the data from the REST API when the button is pressed
+            sap.ui.getCore().attachInit(() => {
+                sap.ui.define([
+                    "jquery.sap.global",
+                    "sap/ui/core/mvc/Controller",
+                    "sap/m/MessageToast",
+                    'sap/m/MessageBox'
+                ], function (jQuery, Controller, MessageToast, MessageBox) {
+                    return Controller.extend("myView.Template", {
+                        onButtonPress: function (oEvent) {
+                            let restAPIURL = _shadowRoot.querySelector('input').value;
+                            $.ajax({
+                                url: restAPIURL,
+                                type: 'GET',
+                                success: function (data) {
+                                    console.log("Data from API: ", data);
+                                    _topn = data["topn"];
+                                    _labels = data["labels"];
+                                    
+                                    // Prepare data for Plotly
+                                    const xValues = _topn.map(item => item[0]); // Product IDs
+                                    const yValues = _topn.map(item => item[2]); // Scores
 
-                    // Assuming `topn` array from the API response
-                    this._topn = data['topn'];
-                    this.renderChart(this._topn);
-                },
-                error: function (e) {
-                    console.error("Error fetching API data: ", e);
-                }
+                                    // Render the scatter plot using Plotly
+                                    Plotly.newPlot('plotly-chart-container', [{
+                                        x: xValues,
+                                        y: yValues,
+                                        mode: 'markers',
+                                        type: 'scatter'
+                                    }], {
+                                        title: 'Top N Product Scores',
+                                        xaxis: { title: 'Product ID' },
+                                        yaxis: { title: 'Score' }
+                                    });
+                                },
+                                error: function (error) {
+                                    console.error("Error fetching data: ", error);
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Render input and button for UI interaction
+                let input = document.createElement('input');
+                input.placeholder = 'Enter API URL';
+                let button = document.createElement('button');
+                button.textContent = 'Fetch Data and Plot';
+                button.onclick = () => {
+                    sap.ui.controller("myView.Template").onButtonPress();
+                };
+                _shadowRoot.appendChild(input);
+                _shadowRoot.appendChild(button);
             });
-        }
-
-        // Function to load Plotly
-        loadPlotly() {
-            const script = document.createElement("script");
-            script.src = "https://cdn.plot.ly/plotly-latest.min.js";
-            script.onload = () => console.log("Plotly loaded");
-            document.head.appendChild(script);
-        }
-
-        // Function to render the chart using Plotly
-        renderChart(dataArray) {
-            // Prepare data for Plotly (x-axis: names, y-axis: scores)
-            let xValues = [];
-            let yValues = [];
-
-            dataArray.forEach(item => {
-                xValues.push(item[1]); // Product name
-                yValues.push(item[2]); // Score value
-            });
-
-            let trace = {
-                x: xValues,
-                y: yValues,
-                mode: 'markers',
-                type: 'scatter'
-            };
-
-            let layout = {
-                title: 'Product Similarity Scores',
-                xaxis: { title: 'Product Name' },
-                yaxis: { title: 'Score' }
-            };
-
-            Plotly.newPlot(_shadowRoot, [trace], layout); // Render the chart
         }
     }
 
@@ -102,8 +121,8 @@
             return v.toString(16);
         });
     }
-
 })();
+
 
 
 
