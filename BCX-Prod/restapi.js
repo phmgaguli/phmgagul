@@ -52,64 +52,61 @@
             div = document.createElement('div');
             div.id = 'plotly-chart-container';
             div.style.width = '100%';
-            div.style.height = '400px'; // You can adjust the height as necessary
+            div.style.height = '400px'; // Adjust the height as necessary
             _shadowRoot.appendChild(div);
 
-            // Fetch the data from the REST API when the button is pressed
-            sap.ui.getCore().attachInit(() => {
-                sap.ui.define([
-                    "jquery.sap.global",
-                    "sap/ui/core/mvc/Controller",
-                    "sap/m/MessageToast",
-                    'sap/m/MessageBox'
-                ], function (jQuery, Controller, MessageToast, MessageBox) {
-                    return Controller.extend("myView.Template", {
-                        onButtonPress: function (oEvent) {
-                            let restAPIURL = _shadowRoot.querySelector('input').value;
-                            $.ajax({
-                                url: restAPIURL,
-                                type: 'GET',
-                                success: function (data) {
-                                    console.log("Data from API: ", data);
-                                    _topn = data["topn"];
-                                    _labels = data["labels"];
-                                    
-                                    // Prepare data for Plotly
-                                    const xValues = _topn.map(item => item[0]); // Product IDs
-                                    const yValues = _topn.map(item => item[2]); // Scores
+            // Fetch data from the REST API and render the chart
+            const restAPIURL = this._export_settings.restapiurl; // Use your API URL
+            if (restAPIURL) {
+                fetch(restAPIURL)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Data from API: ", data);
+                        _topn = data["topn"];
+                        _labels = data["labels"];
 
-                                    // Render the scatter plot using Plotly
-                                    Plotly.newPlot('plotly-chart-container', [{
-                                        x: xValues,
-                                        y: yValues,
-                                        mode: 'markers',
-                                        type: 'scatter'
-                                    }], {
-                                        title: 'Top N Product Scores',
-                                        xaxis: { title: 'Product ID' },
-                                        yaxis: { title: 'Score' }
-                                    });
-                                },
-                                error: function (error) {
-                                    console.error("Error fetching data: ", error);
-                                }
-                            });
-                        }
+                        // Prepare data for Plotly
+                        const xValues = _topn.map(item => item[0]); // Product IDs
+                        const yValues = _topn.map(item => item[2]); // Scores
+
+                        // Render the scatter plot using Plotly
+                        Plotly.newPlot('plotly-chart-container', [{
+                            x: xValues,
+                            y: yValues,
+                            mode: 'markers',
+                            type: 'scatter'
+                        }], {
+                            title: 'Top N Product Scores',
+                            xaxis: { title: 'Product ID' },
+                            yaxis: { title: 'Score' }
+                        });
+                    })
+                    .catch(error => {
+                        console.error("Error fetching data: ", error);
                     });
-                });
-
-                // Render input and button for UI interaction
-                let input = document.createElement('input');
-                input.placeholder = 'Enter API URL';
-                let button = document.createElement('button');
-                button.textContent = 'Fetch Data and Plot';
-                button.onclick = () => {
-                    sap.ui.controller("myView.Template").onButtonPress();
-                };
-                _shadowRoot.appendChild(input);
-                _shadowRoot.appendChild(button);
-            });
+            } else {
+                console.error("REST API URL is not defined.");
+            }
         }
+
+        onCustomWidgetBeforeUpdate(changedProperties) {
+            if ("restapiurl" in changedProperties) {
+                this._export_settings.restapiurl = changedProperties["restapiurl"];
+            }
+        }
+
+        onCustomWidgetAfterUpdate(changedProperties) {
+            this.renderUI();
+        }
+
+        get restapiurl() {
+            return this._export_settings.restapiurl;
+        }
+
+        set restapiurl(value) {
+            this._export_settings.restapiurl = value;
+        }
+
     }
 
     customElements.define("com-fd-djaja-sap-sac-restapi", restAPI);
