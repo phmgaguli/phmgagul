@@ -15,7 +15,15 @@
 			"url": "https://phmgaguli.github.io/phmgagul/plot/plotlytable.js",
 			"integrity": "",
 			"ignoreIntegrity": true
+		},
+		{
+			"kind": "styling",
+			"tag": "com-bcx-widget-plotlytable-aps",
+			"url": "https://phmgaguli.github.io/phmgagul/plot/plotlytable_aps.js",
+			"integrity": "",
+			"ignoreIntegrity": true
 		}
+
 	],
 	"properties": {
 		"label": {
