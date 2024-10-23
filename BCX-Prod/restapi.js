@@ -1,85 +1,69 @@
 (function () {
-    let _shadowRoot;
-    let _id;
-    let _score;
+    let _shadow_root;
     let _topn;
-    let _coords;
-    let _labels;
-    let div;
-    let Ar = [];
-    let widgetName;
+    let widget_name;
 
     let tmpl = document.createElement("template");
     tmpl.innerHTML = `
-      <style>
-      </style>
+        <style>
+        </style>
+        <div id="chart-container" style="width: 100%; height: 400px;"></div>
     `;
 
     class restAPI extends HTMLElement {
         constructor() {
             super();
 
-            _shadowRoot = this.attachShadow({
+            _shadow_root = this.attachShadow({
                 mode: "open"
             });
-            _shadowRoot.appendChild(tmpl.content.cloneNode(true));
+            _shadow_root.appendChild(tmpl.content.cloneNode(true));
 
-            _id = createGuid();
+            widget_name = create_guid();
 
-            this._export_settings = {};
-            this._export_settings.restapiurl = "";
-            this._export_settings.score = "";
-            this._export_settings.topn = "";
-            this._export_settings.coords = "";
-            this._export_settings.name = "";
-            this._export_settings.labels = "";
-
-            this._firstConnectionUI5 = 0;
-
-            // Load Plotly from CDN
-            const plotlyScript = document.createElement('script');
-            plotlyScript.src = "https://cdn.plot.ly/plotly-latest.min.js";
-            plotlyScript.onload = () => console.log('Plotly loaded');
-            document.head.appendChild(plotlyScript);
+            // Load Plotly dynamically
+            const plotly_script = document.createElement('script');
+            plotly_script.src = "https://cdn.plot.ly/plotly-latest.min.js";
+            plotly_script.onload = () => {
+                console.log('Plotly loaded');
+                this.fetch_and_render_chart();  // Fetch data and render the chart after Plotly is loaded
+            };
+            document.head.appendChild(plotly_script);
         }
 
         connectedCallback() {
-            this.renderUI();
+            this.fetch_and_render_chart();  // Ensure the chart renders after the widget is attached
         }
 
-        renderUI() {
-            // Create container for Plotly chart
-            div = document.createElement('div');
-            div.id = 'plotly-chart-container';
-            div.style.width = '100%';
-            div.style.height = '400px'; // Adjust the height as necessary
-            _shadowRoot.appendChild(div);
+        // Fetch data from the REST API and render the scatter plot
+        fetch_and_render_chart() {
+            const rest_api_url = this.getAttribute('restapiurl');  // Get the API URL from the widget attribute
 
-            // Fetch data from the REST API and render the chart
-            const restAPIURL = this._export_settings.restapiurl; // Use your API URL
-            if (restAPIURL) {
-                fetch(restAPIURL)
+            if (rest_api_url) {
+                fetch(rest_api_url)
                     .then(response => response.json())
                     .then(data => {
-                        console.log("Data from API: ", data);
-                        _topn = data["topn"];
-                        _labels = data["labels"];
+                        _topn = data['topn'];  // Assuming the API returns 'topn' array
 
                         // Prepare data for Plotly
-                        const xValues = _topn.map(item => item[0]); // Product IDs
-                        const yValues = _topn.map(item => item[2]); // Scores
+                        const x_values = _topn.map(item => item[0]);  // Product IDs
+                        const y_values = _topn.map(item => item[2]);  // Scores
 
-                        // Render the scatter plot using Plotly
-                        Plotly.newPlot('plotly-chart-container', [{
-                            x: xValues,
-                            y: yValues,
+                        // Create Plotly scatter plot
+                        const trace = {
+                            x: x_values,
+                            y: y_values,
                             mode: 'markers',
                             type: 'scatter'
-                        }], {
+                        };
+
+                        const layout = {
                             title: 'Top N Product Scores',
                             xaxis: { title: 'Product ID' },
                             yaxis: { title: 'Score' }
-                        });
+                        };
+
+                        Plotly.newPlot(_shadow_root.getElementById('chart-container'), [trace], layout);
                     })
                     .catch(error => {
                         console.error("Error fetching data: ", error);
@@ -88,37 +72,20 @@
                 console.error("REST API URL is not defined.");
             }
         }
-
-        onCustomWidgetBeforeUpdate(changedProperties) {
-            if ("restapiurl" in changedProperties) {
-                this._export_settings.restapiurl = changedProperties["restapiurl"];
-            }
-        }
-
-        onCustomWidgetAfterUpdate(changedProperties) {
-            this.renderUI();
-        }
-
-        get restapiurl() {
-            return this._export_settings.restapiurl;
-        }
-
-        set restapiurl(value) {
-            this._export_settings.restapiurl = value;
-        }
-
     }
 
     customElements.define("com-fd-djaja-sap-sac-restapi", restAPI);
 
-    function createGuid() {
+    function create_guid() {
         return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
             let r = Math.random() * 16 | 0,
                 v = c === "x" ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
     }
+
 })();
+
 
 
 
